@@ -13,6 +13,9 @@
   var DEFAULT_PRESET_DAYS = 30;
   var LATE_LIMIT = 20;
   var SVG_NS = 'http://www.w3.org/2000/svg';
+  var THEME_KEY = 'ops-theme';
+  var THEMES = ['dark', 'light'];
+  var DEFAULT_THEME = 'dark';
 
   // ---------- API client ----------
 
@@ -102,10 +105,52 @@
     return Math.round((parseIso(iso) - parseIso(today)) / 86400000);
   }
 
+  // ---------- Theme ----------
+
+  /**
+   * The light/dark toggle. Colours live in style.css as CSS variables keyed on
+   * <html data-theme>; this only flips the attribute and remembers the choice.
+   * Anything stored other than a known theme is ignored, and a storage that throws
+   * (private mode, blocked site data) just means the choice is not remembered.
+   */
+  function initTheme(document, storage) {
+    var button = document.getElementById('theme-toggle');
+
+    function stored() {
+      try {
+        var value = storage && storage.getItem(THEME_KEY);
+        return THEMES.indexOf(value) >= 0 ? value : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function apply(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      var next = theme === 'dark' ? 'light' : 'dark';
+      button.textContent = next === 'light' ? 'Light theme' : 'Dark theme';
+      button.setAttribute('aria-label', 'Switch to the ' + next + ' theme');
+    }
+
+    apply(stored() || DEFAULT_THEME);
+
+    button.addEventListener('click', function () {
+      var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      apply(theme);
+      try {
+        storage.setItem(THEME_KEY, theme);
+      } catch (e) {
+        // Not remembered; the toggle still works for this visit.
+      }
+    });
+  }
+
   // ---------- App ----------
 
   function initApp(document, fetchImpl) {
     var api = createApi(fetchImpl);
+    var view = document.defaultView;
+    initTheme(document, view && view.localStorage);
 
     var els = {
       status: document.getElementById('status-line'),

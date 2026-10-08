@@ -23,6 +23,7 @@ const REGISTERED_IDS = [
   'range-from',
   'range-to',
   'range-apply',
+  'theme-toggle',
   'preset-7',
   'preset-30',
   'preset-90',
@@ -163,6 +164,8 @@ async function loadApp(overrides) {
   const html = readIndexHtml();
   const bodyMatch = html.match(/<body>([\s\S]*)<\/body>/);
   document.body.innerHTML = bodyMatch[1].replace(/<script[^>]*><\/script>/g, '');
+  // Only the body is reloaded, so clear the theme the previous load left on <html>.
+  document.documentElement.removeAttribute('data-theme');
 
   const api = createFakeApi(overrides);
   global.fetch = api.fetchImpl;
