@@ -12,6 +12,8 @@
   var API = '/api';
   var DEFAULT_PRESET_DAYS = 30;
   var LATE_LIMIT = 20;
+  var DAMAGED_CATEGORY = 'Damaged on arrival';
+  var DAMAGED_LIMIT = 20;
   var SVG_NS = 'http://www.w3.org/2000/svg';
 
   // ---------- API client ----------
@@ -36,6 +38,9 @@
       onTime: function (from, to) { return ranged('/deliveries/on-time', from, to); },
       late: function (from, to, limit) { return ranged('/deliveries/late', from, to, '&limit=' + limit); },
       ticketsByCategory: function (from, to) { return ranged('/tickets/by-category', from, to); },
+      ticketsInCategory: function (from, to, category, limit) {
+        return ranged('/tickets', from, to, '&category=' + encodeURIComponent(category) + '&limit=' + limit);
+      },
       vendors: function () { return get(API + '/vendors'); }
     };
   }
@@ -122,6 +127,7 @@
       chartOnTime: document.getElementById('chart-on-time'),
       chartTickets: document.getElementById('chart-tickets'),
       lateBody: document.getElementById('late-body'),
+      damagedBody: document.getElementById('damaged-body'),
       vendors: document.getElementById('vendors-list')
     };
 
@@ -134,6 +140,7 @@
       onTime: [],
       late: [],
       tickets: [],
+      damaged: [],
       vendors: [],
       error: null,
       vendorsError: null
@@ -249,6 +256,35 @@
       });
     }
 
+    function renderDamaged(rows) {
+      var body = els.damagedBody;
+      clear(body);
+      if (!rows.length) {
+        var empty = document.createElement('tr');
+        empty.className = 'empty';
+        var cell = document.createElement('td');
+        cell.setAttribute('colspan', '8');
+        cell.textContent = 'No damaged-on-arrival tickets in this range';
+        empty.appendChild(cell);
+        body.appendChild(empty);
+        return;
+      }
+      rows.forEach(function (row) {
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-ticket', String(row.id));
+        if (row.status === 'open') {
+          tr.className = 'ticket-open' + (row.priority === 'high' ? ' ticket-high' : '');
+        }
+        ['#' + row.id, row.orderRef, row.customer, row.carrier || '–', row.priority, row.status,
+          row.openedAt, row.closedAt || '–'].forEach(function (value) {
+          var td = document.createElement('td');
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+    }
+
     function renderVendors(vendors) {
       var list = els.vendors;
       clear(list);
@@ -298,17 +334,20 @@
         api.kpis(from, to),
         api.onTime(from, to),
         api.late(from, to, LATE_LIMIT),
-        api.ticketsByCategory(from, to)
+        api.ticketsByCategory(from, to),
+        api.ticketsInCategory(from, to, DAMAGED_CATEGORY, DAMAGED_LIMIT)
       ]).then(function (results) {
         state.kpis = results[0];
         state.onTime = results[1];
         state.late = results[2];
         state.tickets = results[3];
+        state.damaged = results[4];
         state.error = null;
         renderKpis(state.kpis);
         renderOnTimeChart(state.onTime);
         renderTicketsChart(state.tickets);
         renderLate(state.late);
+        renderDamaged(state.damaged);
         renderStatus();
       }).catch(function (err) {
         state.error = 'Could not load the dashboard: ' + err.message;

@@ -114,4 +114,35 @@ public class DashboardRepository {
                 """, range(range), (rs, i) -> new TicketCategoryCount(
                 rs.getString("category"), rs.getLong("open_count"), rs.getLong("total")));
     }
+
+    /** Tickets of one category opened in the range: open first, then high priority first, then newest. */
+    public List<TicketDetail> ticketsInCategory(DateRange range, String category, int limit) {
+        SqlParameterSource params = new MapSqlParameterSource()
+                .addValue("from", range.from())
+                .addValue("to", range.to())
+                .addValue("category", category)
+                .addValue("limit", limit);
+        return jdbc.query("""
+                SELECT t.id, o.order_ref, o.customer_name, c.name AS carrier,
+                       t.priority, t.status, t.opened_at, t.closed_at
+                FROM tickets t
+                JOIN orders o ON o.id = t.order_id
+                LEFT JOIN deliveries d ON d.order_id = o.id
+                LEFT JOIN carriers c ON c.id = d.carrier_id
+                WHERE t.category = :category
+                  AND t.opened_at BETWEEN :from AND :to
+                ORDER BY CASE WHEN t.status = 'open' THEN 0 ELSE 1 END,
+                         CASE t.priority WHEN 'high' THEN 0 WHEN 'normal' THEN 1 ELSE 2 END,
+                         t.opened_at DESC, t.id
+                LIMIT :limit
+                """, params, (rs, i) -> new TicketDetail(
+                rs.getLong("id"),
+                rs.getString("order_ref"),
+                rs.getString("customer_name"),
+                rs.getString("carrier"),
+                rs.getString("priority"),
+                rs.getString("status"),
+                rs.getObject("opened_at", LocalDate.class),
+                rs.getObject("closed_at", LocalDate.class)));
+    }
 }

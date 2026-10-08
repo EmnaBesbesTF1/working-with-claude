@@ -54,7 +54,7 @@ describe('date range', () => {
     document.getElementById('range-to').value = '2026-07-31';
     document.getElementById('range-form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
     await flush();
-    for (const path of ['/api/kpis', '/api/deliveries/on-time', '/api/deliveries/late', '/api/tickets/by-category']) {
+    for (const path of ['/api/kpis', '/api/deliveries/on-time', '/api/deliveries/late', '/api/tickets/by-category', '/api/tickets']) {
       const calls = rangeCalls(api, path);
       expect(calls[calls.length - 1].from).toBe('2026-07-01');
       expect(calls[calls.length - 1].to).toBe('2026-07-31');

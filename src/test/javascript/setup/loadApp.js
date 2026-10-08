@@ -36,6 +36,8 @@ const REGISTERED_IDS = [
   'chart-tickets',
   'late-table',
   'late-body',
+  'damaged-table',
+  'damaged-body',
   'vendors-list'
 ];
 
@@ -71,6 +73,11 @@ const FIXTURES = {
     { category: 'Damaged on arrival', open: 22, total: 51 },
     { category: 'Missing parts', open: 16, total: 40 },
     { category: 'Warranty claim', open: 9, total: 29 }
+  ],
+  damagedTickets: [
+    { id: 571, orderRef: 'MF-01822', customer: 'Bean There Cafe', carrier: 'Kessler Logistics', priority: 'high', status: 'open', openedAt: '2026-09-19', closedAt: null },
+    { id: 560, orderRef: 'MF-01779', customer: 'Grind & Co', carrier: 'Northwind Freight', priority: 'normal', status: 'open', openedAt: '2026-09-17', closedAt: null },
+    { id: 512, orderRef: 'MF-01650', customer: 'The Daily Pour', carrier: 'Kessler Logistics', priority: 'low', status: 'closed', openedAt: '2026-09-02', closedAt: '2026-09-06' }
   ],
   vendors: [
     { id: 3, name: 'Volta Parts GmbH', category: 'Spare parts', annualSpend: 238000, contractEnd: '2026-10-15', noticeDays: 30, owner: 'Hanna Lindqvist', daysUntilContractEnd: 24, inNoticeWindow: true },
@@ -144,6 +151,11 @@ function createFakeApi(overrides) {
       }
       case '/api/tickets/by-category':
         return json(200, data.ticketsByCategory.map((r) => Object.assign({}, r)));
+      case '/api/tickets': {
+        const rows = data.damagedTickets.filter(() => params.category === 'Damaged on arrival');
+        const limit = params.limit === undefined ? rows.length : Number(params.limit);
+        return json(200, rows.slice(0, Math.max(0, limit)).map((r) => Object.assign({}, r)));
+      }
       case '/api/vendors':
         return json(200, data.vendors.map((r) => Object.assign({}, r)));
       default:
@@ -156,7 +168,7 @@ function createFakeApi(overrides) {
 
 /**
  * Load the page and start the app against a fake API. `overrides` replaces any of the
- * fixtures by name (health, kpis, onTime, late, ticketsByCategory, vendors, failing).
+ * fixtures by name (health, kpis, onTime, late, ticketsByCategory, damagedTickets, vendors, failing).
  * Returns { app, api, document, module } once the initial load has finished.
  */
 async function loadApp(overrides) {
