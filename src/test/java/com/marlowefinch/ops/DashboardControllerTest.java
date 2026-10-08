@@ -2,6 +2,7 @@ package com.marlowefinch.ops;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -95,6 +96,26 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$[0].category").value("Delivery delay"))
                 .andExpect(jsonPath("$[0].open").value(41))
                 .andExpect(jsonPath("$[0].total").value(90));
+    }
+
+    @Test
+    void ticketsInCategoryDefaultToTwentyRowsOverTheLast30Days() throws Exception {
+        mvc.perform(get("/api/tickets").param("category", "Damaged on arrival"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(20)))
+                .andExpect(jsonPath("$[0].status").value("open"))
+                .andExpect(jsonPath("$[0].priority").value("high"))
+                .andExpect(jsonPath("$[0].orderRef").isString())
+                .andExpect(jsonPath("$[0].customer").isString())
+                .andExpect(jsonPath("$[0].carrier").isString())
+                .andExpect(jsonPath("$[0].openedAt").isString())
+                .andExpect(jsonPath("$[0].closedAt").value(nullValue()));
+    }
+
+    @Test
+    void ticketsInCategoryRequireACategory() throws Exception {
+        mvc.perform(get("/api/tickets"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

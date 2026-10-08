@@ -113,6 +113,24 @@ class DashboardRepositoryTest {
     }
 
     @Test
+    void ticketsInCategoryListsDamagedOnArrivalOpenAndHighPriorityFirst() {
+        List<TicketDetail> all = repository.ticketsInCategory(LAST_30_DAYS, "Damaged on arrival", 100);
+        assertThat(all).hasSize(51);
+        assertThat(all.stream().filter(t -> t.status().equals("open"))).hasSize(22);
+        assertThat(all.subList(0, 22)).allMatch(t -> t.status().equals("open"));
+        assertThat(all.subList(0, 8)).allMatch(t -> t.priority().equals("high"));
+        assertThat(all).allMatch(t -> t.orderRef() != null && t.carrier() != null);
+        assertThat(all).allMatch(t -> t.status().equals("open") == (t.closedAt() == null));
+    }
+
+    @Test
+    void ticketsInCategoryRespectsTheLimitAndIsEmptyForAnUnknownCategoryOrABackwardsRange() {
+        assertThat(repository.ticketsInCategory(LAST_30_DAYS, "Damaged on arrival", 5)).hasSize(5);
+        assertThat(repository.ticketsInCategory(LAST_30_DAYS, "No such category", 20)).isEmpty();
+        assertThat(repository.ticketsInCategory(BACKWARDS, "Damaged on arrival", 20)).isEmpty();
+    }
+
+    @Test
     void vendorsAreSoonestContractEndFirstWithDaysUntilFromTheFixedClock() {
         List<Vendor> all = vendors.findAll();
         assertThat(all).hasSize(8);

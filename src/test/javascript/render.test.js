@@ -92,6 +92,33 @@ describe('late deliveries table', () => {
   });
 });
 
+describe('damaged on arrival table', () => {
+  test('renders one row per ticket with order, carrier and status', async () => {
+    const { document } = await loadApp();
+    const rows = bars(document, '#damaged-body tr');
+    expect(rows.map((r) => r.getAttribute('data-ticket'))).toEqual(['571', '560', '512']);
+    const cells = Array.from(rows[0].querySelectorAll('td')).map((td) => td.textContent);
+    expect(cells).toEqual(['#571', 'MF-01822', 'Bean There Cafe', 'Kessler Logistics', 'high', 'open', '2026-09-19', '–']);
+    expect(rows[2].querySelectorAll('td')[7].textContent).toBe('2026-09-06');
+  });
+
+  test('highlights open tickets, and open high-priority ones more strongly', async () => {
+    const { document } = await loadApp();
+    const rows = bars(document, '#damaged-body tr');
+    expect(rows[0].className).toBe('ticket-open ticket-high');
+    expect(rows[1].className).toBe('ticket-open');
+    expect(rows[2].className).toBe('');
+  });
+
+  test('shows an empty message when no ticket matches', async () => {
+    const { document } = await loadApp({ damagedTickets: [] });
+    const rows = bars(document, '#damaged-body tr');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].classList.contains('empty')).toBe(true);
+    expect(rows[0].textContent).toBe('No damaged-on-arrival tickets in this range');
+  });
+});
+
 describe('vendors panel', () => {
   test('lists every vendor with its name', async () => {
     const { document } = await loadApp();

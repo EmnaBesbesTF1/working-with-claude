@@ -235,6 +235,15 @@ button:hover {
   font-style: italic;
 }
 
+.late-table tr.ticket-open td {
+  font-weight: 600;
+}
+
+.late-table tr.ticket-high td {
+  color: #9a3412;
+  background: #fff4ec;
+}
+
 .vendors {
   list-style: none;
   margin: 0;

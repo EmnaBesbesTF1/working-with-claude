@@ -1,7 +1,7 @@
 const { loadApp } = require('./setup/loadApp');
 
 describe('API calls', () => {
-  test('asks the API for today first, then the four range endpoints and the vendors', async () => {
+  test('asks the API for today first, then the five range endpoints and the vendors', async () => {
     const { api } = await loadApp();
     const paths = api.calls.map((c) => c.path);
     expect(paths[0]).toBe('/api/health');
@@ -9,9 +9,18 @@ describe('API calls', () => {
       '/api/deliveries/late',
       '/api/deliveries/on-time',
       '/api/kpis',
+      '/api/tickets',
       '/api/tickets/by-category',
       '/api/vendors'
     ]);
+  });
+
+  test('asks for at most 20 damaged-on-arrival tickets, with the category URL-encoded', async () => {
+    const { api } = await loadApp();
+    const damaged = api.calls.find((c) => c.path === '/api/tickets');
+    expect(damaged.params.category).toBe('Damaged on arrival');
+    expect(damaged.params.limit).toBe('20');
+    expect(damaged.url).toContain('category=Damaged%20on%20arrival');
   });
 
   test('asks for at most 20 late deliveries', async () => {
